@@ -1,0 +1,55 @@
+name: Update lockfile and create PR
+
+on:
+  push:
+    branches:
+      - 'upgrade/next-14.2.35'
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm ci || true
+          npm install
+
+      - name: Commit package-lock.json if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git status --porcelain | grep -q "package-lock.json"; then
+            git add package-lock.json
+            git commit -m "chore(deps): update package-lock.json after Next.js upgrade"
+            git push origin HEAD
+          else
+            echo "No lockfile changes"
+          fi
+
+      - name: Create Pull Request (if none exists)
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): update lockfile after Next.js upgrade"
+          title: "Upgrade Next.js to 14.2.35 (security patch)"
+          body: |
+            This PR updates the package-lock.json after upgrading Next.js to 14.2.35 to include the security patch (see Next.js security update 2025-12-11).
+
+            Steps applied:
+            - Updated package.json to use next@14.2.35 (already committed in this branch).
+            - Ran npm install and updated package-lock.json.
+
+            Please run CI and verify build/tests before merging.
+          base: main
+          head: upgrade/next-14.2.35
