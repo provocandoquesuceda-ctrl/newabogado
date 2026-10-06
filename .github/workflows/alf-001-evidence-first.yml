@@ -1,0 +1,36 @@
+name: ALF-001 Evidence-First Reuse
+
+on:
+  push:
+    branches:
+      - "alf-001-reuse-evidence-first"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-first:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Execute ALF-001
+        run: node automation-learning-factory/alf-001-evidence-first.mjs
+
+      - name: Validate evidence
+        run: |
+          test -s automation-learning-factory/evidence/ALF-001-latest.json
+          node -e "const e=require('./automation-learning-factory/evidence/ALF-001-latest.json'); if(e.status!=='EXECUTED') process.exit(1); console.log('Evidence validated:', e.automation_id)"
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ALF-001-evidence-newabogado
+          path: automation-learning-factory/evidence/ALF-001-latest.json
